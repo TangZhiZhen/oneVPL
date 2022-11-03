@@ -173,27 +173,31 @@ mfxStatus CD3D9Device::Init(mfxHDL hWindow, mfxU16 nViews, mfxU32 nAdapterNum) {
 
     m_nViews = nViews;
 
-    HRESULT hr = Direct3DCreate9Ex(D3D_SDK_VERSION, &m_pD3D9);
-    if (!m_pD3D9 || FAILED(hr))
+    HRESULT hr = Direct3DCreate9Ex(D3D_SDK_VERSION, &m_pD3D9Ex);
+    if (!m_pD3D9Ex || FAILED(hr))
         return MFX_ERR_DEVICE_FAILED;
+
+    hr = m_pD3D9Ex->QueryInterface(__uuidof(IDirect3D9), (void**)(&m_pD3D9));
+    if (FAILED(hr))
+        return MFX_ERR_NULL_PTR;
+
 
     ZeroMemory(&m_D3DPP, sizeof(m_D3DPP));
     sts = FillD3DPP(hWindow, nViews, m_D3DPP);
     MSDK_CHECK_STATUS(sts, "FillD3DPP failed");
 
-    hr = m_pD3D9->CreateDeviceEx(
+    hr = m_pD3D9->CreateDevice(
         nAdapterNum,
         D3DDEVTYPE_HAL,
         (HWND)hWindow,
         D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE,
         &m_D3DPP,
-        NULL,
         &m_pD3DD9);
     if (FAILED(hr))
         return MFX_ERR_NULL_PTR;
 
     if (hWindow) {
-        hr = m_pD3DD9->ResetEx(&m_D3DPP, NULL);
+        hr = m_pD3DD9->Reset(&m_D3DPP);
         if (FAILED(hr))
             return MFX_ERR_UNDEFINED_BEHAVIOR;
         hr = m_pD3DD9->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
@@ -232,7 +236,7 @@ mfxStatus CD3D9Device::Reset() {
 
         // Reset will change the parameters, so use a copy instead.
         D3DPRESENT_PARAMETERS d3dpp = m_D3DPP;
-        hr                          = m_pD3DD9->ResetEx(&d3dpp, NULL);
+        hr                          = m_pD3DD9->Reset(&d3dpp);
         if (FAILED(hr))
             return MFX_ERR_UNDEFINED_BEHAVIOR;
     }
@@ -265,6 +269,11 @@ CD3D9Device::~CD3D9Device() {
 mfxStatus CD3D9Device::GetHandle(mfxHandleType type, mfxHDL* pHdl) {
     if (MFX_HANDLE_DIRECT3D_DEVICE_MANAGER9 == type && pHdl != NULL) {
         *pHdl = m_pDeviceManager9;
+
+        return MFX_ERR_NONE;
+    }
+    else if (MFX_HANDLE_D3D9_DEVICE == type && pHdl != NULL) {
+        *pHdl = m_pD3DD9;
 
         return MFX_ERR_NONE;
     }

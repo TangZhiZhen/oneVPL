@@ -101,6 +101,7 @@ mfxStatus D3DFrameAllocator::Init(mfxAllocatorParams* pParams) {
         return MFX_ERR_NOT_INITIALIZED;
 
     m_manager      = pd3dParams->pManager;
+    m_device       = pd3dParams->pDevice;
     m_surfaceUsage = pd3dParams->surfaceUsage;
 
     return MFX_ERR_NONE;
@@ -392,6 +393,25 @@ mfxStatus D3DFrameAllocator::AllocImpl(mfxFrameAllocRequest* request,
 
     if (request->Type & MFX_MEMTYPE_EXTERNAL_FRAME) {
         for (int i = 0; i < request->NumFrameSuggested; i++) {
+            hr = m_device->CreateTexture(request->Info.Width,
+                                         request->Info.Height,
+                                         1,
+                                         D3DUSAGE_DYNAMIC,
+                                         format,
+                                         D3DPOOL_DEFAULT,
+                                         &m_pTexture2D[i],
+                                         NULL);
+            if (FAILED(hr)) {
+                ReleaseResponse(response);
+                return MFX_ERR_MEMORY_ALLOC;
+            }
+
+            hr = m_pTexture2D[i]->GetSurfaceLevel(0, &m_pSrcSurface[i]);
+            if (FAILED(hr)) {
+                ReleaseResponse(response);
+                return MFX_ERR_MEMORY_ALLOC;
+            }
+
             hr = videoService->CreateSurface(request->Info.Width,
                                              request->Info.Height,
                                              0,
@@ -399,12 +419,24 @@ mfxStatus D3DFrameAllocator::AllocImpl(mfxFrameAllocRequest* request,
                                              D3DPOOL_DEFAULT,
                                              m_surfaceUsage,
                                              target,
-                                             (IDirect3DSurface9**)&dxMidPtrs[i]->first,
-                                             &dxMidPtrs[i]->second);
+                                             &m_pDestSurface[i],
+                                             NULL);
             if (FAILED(hr)) {
                 ReleaseResponse(response);
                 return MFX_ERR_MEMORY_ALLOC;
             }
+
+            hr = m_device->StretchRect(m_pSrcSurface[i],
+                                       NULL,
+                                       m_pDestSurface[i],
+                                       NULL,
+                                       D3DTEXF_NONE);
+             if (FAILED(hr)) {
+                 ReleaseResponse(response);
+                 return MFX_ERR_MEMORY_ALLOC;
+             }
+
+            dxMidPtrs[i]->first = m_pDestSurface[i];
         }
     }
     else {

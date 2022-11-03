@@ -19,9 +19,10 @@ enum eTypeHandle { DXVA2_PROCESSOR = 0x00, DXVA2_DECODER = 0x01 };
 
 struct D3DAllocatorParams : mfxAllocatorParams {
     IDirect3DDeviceManager9* pManager;
+    IDirect3DDevice9* pDevice;
     DWORD surfaceUsage;
 
-    D3DAllocatorParams() : pManager(), surfaceUsage() {}
+    D3DAllocatorParams() : pManager(), pDevice(), surfaceUsage() {}
 };
 
 class D3DFrameAllocator : public BaseFrameAllocator {
@@ -61,11 +62,16 @@ protected:
     std::vector<mfxHDLPair**> m_midsAllocated;
 
     CComPtr<IDirect3DDeviceManager9> m_manager;
+    CComPtr<IDirect3DDevice9> m_device;
     CComPtr<IDirectXVideoDecoderService> m_decoderService;
     CComPtr<IDirectXVideoProcessorService> m_processorService;
     HANDLE m_hDecoder;
     HANDLE m_hProcessor;
     DWORD m_surfaceUsage;
+
+    CComPtr<IDirect3DTexture9> m_pTexture2D[4];
+    CComPtr<IDirect3DSurface9> m_pDestSurface[4];
+    CComPtr<IDirect3DSurface9> m_pSrcSurface[4];
 };
 
 #endif // #if defined( _WIN32 ) || defined ( _WIN64 )

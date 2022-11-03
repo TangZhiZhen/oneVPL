@@ -44,8 +44,9 @@ protected:
     virtual mfxStatus FillD3DPP(mfxHDL hWindow, mfxU16 nViews, D3DPRESENT_PARAMETERS& D3DPP);
 
 private:
-    IDirect3D9Ex* m_pD3D9;
-    IDirect3DDevice9Ex* m_pD3DD9;
+    IDirect3D9Ex* m_pD3D9Ex;
+    IDirect3D9* m_pD3D9;
+    IDirect3DDevice9* m_pD3DD9;
     IDirect3DDeviceManager9* m_pDeviceManager9;
     D3DPRESENT_PARAMETERS m_D3DPP;
     UINT m_resetToken;

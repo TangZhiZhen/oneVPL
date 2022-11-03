@@ -1077,7 +1077,7 @@ mfxStatus CEncodingPipeline::CreateAllocator() {
         sts = CreateHWDevice();
         MSDK_CHECK_STATUS(sts, "CreateHWDevice failed");
 
-        mfxHDL hdl = NULL;
+        mfxHDL hdl = NULL, dev_hdl = NULL;
         mfxHandleType hdl_t =
     #if MFX_D3D11_SUPPORT
             D3D11_MEMORY == m_memType ? MFX_HANDLE_D3D11_DEVICE :
@@ -1086,6 +1086,15 @@ mfxStatus CEncodingPipeline::CreateAllocator() {
 
         sts = m_hwdev->GetHandle(hdl_t, &hdl);
         MSDK_CHECK_STATUS(sts, "m_hwdev->GetHandle failed");
+
+        mfxHandleType dev_hdl_t =
+    #if MFX_D3D11_SUPPORT
+            D3D11_MEMORY == m_memType ? MFX_HANDLE_D3D11_DEVICE :
+    #endif // #if MFX_D3D11_SUPPORT
+                                        MFX_HANDLE_D3D9_DEVICE;
+        sts = m_hwdev->GetHandle(dev_hdl_t, &dev_hdl);
+        MSDK_CHECK_STATUS(sts, "m_hwdev->GetHandle failed");
+
 
         // handle is needed for HW library only
         mfxIMPL impl = 0;
@@ -1116,7 +1125,7 @@ mfxStatus CEncodingPipeline::CreateAllocator() {
             D3DAllocatorParams* pd3dAllocParams = new D3DAllocatorParams;
             MSDK_CHECK_POINTER(pd3dAllocParams, MFX_ERR_MEMORY_ALLOC);
             pd3dAllocParams->pManager = reinterpret_cast<IDirect3DDeviceManager9*>(hdl);
-
+            pd3dAllocParams->pDevice  = reinterpret_cast<IDirect3DDevice9*>(dev_hdl);
             m_pmfxAllocatorParams = pd3dAllocParams;
         }
 
